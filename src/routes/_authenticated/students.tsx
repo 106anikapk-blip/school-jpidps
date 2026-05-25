@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -162,28 +162,28 @@ function StudentsPage() {
             </DialogHeader>
             <form onSubmit={submit} className="grid grid-cols-2 gap-3">
               <Field label="Full name" className="col-span-2">
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                {(id) => <Input id={id} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />}
               </Field>
               <Field label="Class">
-                <Input value={form.class_name} onChange={(e) => setForm({ ...form, class_name: e.target.value })} required />
+                {(id) => <Input id={id} value={form.class_name} onChange={(e) => setForm({ ...form, class_name: e.target.value })} required />}
               </Field>
               <Field label="Section">
-                <Input value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })} />
+                {(id) => <Input id={id} value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })} />}
               </Field>
               <Field label="Roll no.">
-                <Input value={form.roll_no} onChange={(e) => setForm({ ...form, roll_no: e.target.value })} />
+                {(id) => <Input id={id} value={form.roll_no} onChange={(e) => setForm({ ...form, roll_no: e.target.value })} />}
               </Field>
               <Field label="Total fee (₹)">
-                <Input type="number" min="0" step="0.01" value={form.total_fee} onChange={(e) => setForm({ ...form, total_fee: Number(e.target.value) })} required />
+                {(id) => <Input id={id} type="number" min="0" step="0.01" value={form.total_fee} onChange={(e) => setForm({ ...form, total_fee: Number(e.target.value) })} required />}
               </Field>
               <Field label="Parent name">
-                <Input value={form.parent_name} onChange={(e) => setForm({ ...form, parent_name: e.target.value })} />
+                {(id) => <Input id={id} value={form.parent_name} onChange={(e) => setForm({ ...form, parent_name: e.target.value })} />}
               </Field>
               <Field label="Phone">
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                {(id) => <Input id={id} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />}
               </Field>
               <Field label="Notes" className="col-span-2">
-                <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                {(id) => <Input id={id} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />}
               </Field>
               <DialogFooter className="col-span-2">
                 <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
@@ -197,8 +197,8 @@ function StudentsPage() {
         <CardHeader className="flex flex-row items-center gap-3 space-y-0">
           <CardTitle className="flex-1">All students</CardTitle>
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="pl-8" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" aria-label="Search students" className="pl-8" />
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -241,11 +241,11 @@ function StudentsPage() {
                       </td>
                       <td className="py-2 px-4 text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => openEdit(s)}>
-                            <Pencil className="h-4 w-4" />
+                          <Button size="icon" variant="ghost" aria-label={`Edit ${s.name}`} onClick={() => openEdit(s)}>
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => remove(s.id)}>
-                            <Trash2 className="h-4 w-4" />
+                          <Button size="icon" variant="ghost" aria-label={`Delete ${s.name}`} onClick={() => remove(s.id)}>
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </div>
                       </td>
@@ -261,11 +261,20 @@ function StudentsPage() {
   );
 }
 
-function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: (id: string) => React.ReactNode;
+  className?: string;
+}) {
+  const id = useId();
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <Label>{label}</Label>
-      {children}
+      <Label htmlFor={id}>{label}</Label>
+      {children(id)}
     </div>
   );
 }
