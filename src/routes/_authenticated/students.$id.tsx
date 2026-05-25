@@ -35,8 +35,8 @@ function StudentDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Button asChild size="icon" variant="ghost">
-          <Link to="/students"><ArrowLeft className="h-4 w-4" /></Link>
+        <Button asChild size="icon" variant="ghost" aria-label="Back to students">
+          <Link to="/students" aria-label="Back to students"><ArrowLeft className="h-4 w-4" aria-hidden="true" /></Link>
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">{student.name}</h1>

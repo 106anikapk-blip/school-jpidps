@@ -89,7 +89,9 @@ function Dashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent payments</CardTitle>
+          <CardTitle asChild>
+            <h2>Recent payments</h2>
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (

@@ -34,8 +34,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <span className="font-semibold">Fee Manager</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)}>
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
         </Button>
       </header>
 
