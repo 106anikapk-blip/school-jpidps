@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 function SettingsPage() {
+  const schoolId = useId();
+  const chatIdField = useId();
   const [schoolName, setSchoolName] = useState("");
   const [chatId, setChatId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -58,13 +60,13 @@ function SettingsPage() {
         <CardContent>
           <form onSubmit={save} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>School name</Label>
-              <Input value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="e.g. Sunrise Public School" disabled={loading} />
+              <Label htmlFor={schoolId}>School name</Label>
+              <Input id={schoolId} value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="e.g. Sunrise Public School" disabled={loading} />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Telegram chat ID</Label>
-              <Input value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="e.g. 123456789 or -100123456789" disabled={loading} />
+              <Label htmlFor={chatIdField}>Telegram chat ID</Label>
+              <Input id={chatIdField} value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="e.g. 123456789 or -100123456789" disabled={loading} />
               <p className="text-xs text-muted-foreground">
                 Open your bot in Telegram and send any message, then look up your chat ID. Add it here to receive a notification every time a fee is collected.
               </p>
