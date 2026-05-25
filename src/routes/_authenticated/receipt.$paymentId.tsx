@@ -107,7 +107,9 @@ function ReceiptPage() {
       <Card className="p-6 md:p-8 print:shadow-none print:border-0">
         <div className="text-center border-b pb-4">
           <div className="text-xl font-semibold tracking-tight">{data.school_name}</div>
-          <div className="text-xs text-muted-foreground mt-1">Fee Payment Receipt</div>
+          <h1 className="text-base font-medium text-muted-foreground mt-1">
+            Fee Payment Receipt · {data.receipt_no}
+          </h1>
         </div>
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm mt-5">

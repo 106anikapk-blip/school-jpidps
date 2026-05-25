@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
@@ -35,6 +35,12 @@ function CollectFee() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const notify = useServerFn(notifyFeeDeposit);
+
+  const studentFieldId = useId();
+  const amountId = useId();
+  const dateId = useId();
+  const modeId = useId();
+  const noteId = useId();
 
   const [studentId, setStudentId] = useState(search.studentId ?? "");
   const [amount, setAmount] = useState("");
@@ -139,9 +145,9 @@ function CollectFee() {
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Student</Label>
+              <Label htmlFor={studentFieldId}>Student</Label>
               <Select value={studentId} onValueChange={setStudentId}>
-                <SelectTrigger><SelectValue placeholder="Select a student" /></SelectTrigger>
+                <SelectTrigger id={studentFieldId} aria-label="Student"><SelectValue placeholder="Select a student" /></SelectTrigger>
                 <SelectContent>
                   {students?.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
@@ -160,19 +166,19 @@ function CollectFee() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Amount (₹)</Label>
-                <Input type="number" min="1" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+                <Label htmlFor={amountId}>Amount (₹)</Label>
+                <Input id={amountId} type="number" min="1" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
               </div>
               <div className="space-y-1.5">
-                <Label>Date</Label>
-                <Input type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} required />
+                <Label htmlFor={dateId}>Date</Label>
+                <Input id={dateId} type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} required />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Payment mode</Label>
+              <Label htmlFor={modeId}>Payment mode</Label>
               <Select value={mode} onValueChange={(v) => setMode(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id={modeId} aria-label="Payment mode"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">Cash</SelectItem>
                   <SelectItem value="upi">UPI</SelectItem>
@@ -184,8 +190,8 @@ function CollectFee() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Note (optional)</Label>
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={255} />
+              <Label htmlFor={noteId}>Note (optional)</Label>
+              <Textarea id={noteId} value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={255} />
             </div>
 
             <Button type="submit" disabled={busy || !studentId}>
