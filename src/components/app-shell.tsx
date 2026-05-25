@@ -3,21 +3,28 @@ import { ReactNode, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, LayoutDashboard, Users, Wallet, Settings, LogOut, Menu, X } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Users, Wallet, Settings, LogOut, Menu, X, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const nav = [
+const adminNav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/students", label: "Students", icon: Users },
   { to: "/collect", label: "Collect Fee", icon: Wallet },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
+const studentNav = [
+  { to: "/me", label: "My Profile", icon: User },
+] as const;
+
 export function AppShell({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const nav = role === "student" ? studentNav : adminNav;
+  const subtitle = role === "student" ? "Student portal" : "Admin console";
 
   async function logout() {
     await supabase.auth.signOut();
@@ -26,7 +33,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      {/* Top bar (mobile) */}
       <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between border-b bg-background px-4 h-14">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
@@ -46,7 +52,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <div className="lg:flex">
-        {/* Sidebar */}
         <aside
           className={cn(
             "lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:flex-shrink-0 bg-background border-r",
@@ -60,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div>
               <div className="font-semibold leading-tight">Fee Manager</div>
-              <div className="text-xs text-muted-foreground">Admin console</div>
+              <div className="text-xs text-muted-foreground">{subtitle}</div>
             </div>
           </div>
           <nav className="p-3 space-y-1">

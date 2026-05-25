@@ -102,6 +102,8 @@ export type Database = {
       }
       students: {
         Row: {
+          admission_no: string | null
+          auth_user_id: string | null
           class_name: string
           created_at: string
           id: string
@@ -115,6 +117,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admission_no?: string | null
+          auth_user_id?: string | null
           class_name: string
           created_at?: string
           id?: string
@@ -128,6 +132,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admission_no?: string | null
+          auth_user_id?: string | null
           class_name?: string
           created_at?: string
           id?: string
@@ -178,7 +184,7 @@ export type Database = {
       next_receipt_no: { Args: never; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -306,7 +312,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "student"],
     },
   },
 } as const

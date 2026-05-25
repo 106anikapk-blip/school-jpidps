@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "user";
+export type AppRole = "admin" | "student" | "user";
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
@@ -13,13 +13,11 @@ export function useAuth() {
   useEffect(() => {
     let active = true;
 
-    // Listener FIRST
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       if (!active) return;
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        // Defer role fetch
         setTimeout(() => {
           if (!active) return;
           supabase
@@ -63,5 +61,12 @@ export function useAuth() {
     };
   }, []);
 
-  return { session, user, role, loading, isAdmin: role === "admin" };
+  return {
+    session,
+    user,
+    role,
+    loading,
+    isAdmin: role === "admin",
+    isStudent: role === "student",
+  };
 }
