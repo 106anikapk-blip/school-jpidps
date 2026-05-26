@@ -239,12 +239,22 @@ function StudentsPage() {
             Create student profiles. Each one gets a login account.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNew}>
-              <Plus className="h-4 w-4" /> Add student
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={runBackfill}
+            disabled={backfilling}
+            title="Generate login credentials for students missing them"
+          >
+            <Sparkles className="h-4 w-4" />
+            {backfilling ? "Generating…" : "Generate missing logins"}
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNew}>
+                <Plus className="h-4 w-4" /> Add student
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editing ? "Edit student" : "New student"}</DialogTitle>
