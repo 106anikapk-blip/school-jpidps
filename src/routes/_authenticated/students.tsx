@@ -265,32 +265,12 @@ function StudentsPage() {
                   />
                 )}
               </Field>
-              <Field label="Admission no." className={editing ? "col-span-2" : ""}>
-                {(id) => (
-                  <Input
-                    id={id}
-                    value={form.admission_no}
-                    onChange={(e) =>
-                      setForm({ ...form, admission_no: e.target.value })
-                    }
-                    disabled={!!editing}
-                    required
-                  />
-                )}
-              </Field>
               {!editing && (
-                <Field label="Login password">
-                  {(id) => (
-                    <Input
-                      id={id}
-                      type="text"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      minLength={6}
-                      required
-                    />
-                  )}
-                </Field>
+                <div className="col-span-2 rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                  Login username and password are generated automatically from the
+                  student's name and phone number (4 letters + last 4 digits;
+                  password is the full phone number).
+                </div>
               )}
               <Field label="Class">
                 {(id) => (
