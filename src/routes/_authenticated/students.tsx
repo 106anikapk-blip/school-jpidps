@@ -67,6 +67,7 @@ function StudentsPage() {
   const createFn = useServerFn(createStudentAccount);
   const deleteFn = useServerFn(deleteStudentAccount);
   const resetFn = useServerFn(resetStudentPassword);
+  const backfillFn = useServerFn(backfillStudentCredentials);
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -77,6 +78,13 @@ function StudentsPage() {
   const [pwOpen, setPwOpen] = useState(false);
   const [pwTarget, setPwTarget] = useState<{ id: string; name: string } | null>(null);
   const [newPw, setNewPw] = useState("");
+
+  const [creds, setCreds] = useState<{ name: string; username: string; password: string } | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<{
+    generated: { id: string; name: string; username: string; password: string }[];
+    skipped: { name: string; reason: string }[];
+  } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["students-with-paid"],
