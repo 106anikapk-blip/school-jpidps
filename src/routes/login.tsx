@@ -112,7 +112,7 @@ function LoginPage() {
         <Card>
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
-            <CardDescription>Students log in with admission number or phone.</CardDescription>
+            <CardDescription>Students sign in with their username or phone.</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="student">
@@ -124,7 +124,7 @@ function LoginPage() {
               <TabsContent value="student">
                 <form onSubmit={handleStudentSignIn} className="space-y-3 pt-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="identifier">Admission no. or phone</Label>
+                    <Label htmlFor="identifier">Username or phone</Label>
                     <Input
                       id="identifier"
                       value={identifier}

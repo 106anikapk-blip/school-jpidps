@@ -17,13 +17,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Trash2, Pencil, KeyRound } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, KeyRound, Copy, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 import {
   createStudentAccount,
   deleteStudentAccount,
   resetStudentPassword,
+  backfillStudentCredentials,
 } from "@/lib/students.functions";
 
 export const Route = createFileRoute("/_authenticated/students")({
@@ -31,25 +32,27 @@ export const Route = createFileRoute("/_authenticated/students")({
 });
 
 const newStudentSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-  admission_no: z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9_\-/]+$/, "Use letters, digits, - _ /"),
-  class_name: z.string().trim().min(1).max(40),
+  name: z.string().trim().min(1, "Name is required").max(120),
+  class_name: z.string().trim().min(1, "Class is required").max(40),
   section: z.string().trim().max(20).optional().or(z.literal("")),
   roll_no: z.string().trim().max(40).optional().or(z.literal("")),
   parent_name: z.string().trim().max(120).optional().or(z.literal("")),
-  phone: z.string().trim().max(20).optional().or(z.literal("")),
+  phone: z
+    .string()
+    .trim()
+    .min(4, "Phone is required (used to generate login)")
+    .max(20)
+    .regex(/^[0-9+\-\s]+$/, "Digits only"),
   total_fee: z.coerce.number().min(0).max(10_000_000),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
-  password: z.string().min(6).max(72),
 });
 
-const editStudentSchema = newStudentSchema.omit({ password: true, admission_no: true });
+const editStudentSchema = newStudentSchema;
 
 type NewForm = z.infer<typeof newStudentSchema>;
 
 const empty: NewForm = {
   name: "",
-  admission_no: "",
   class_name: "",
   section: "",
   roll_no: "",
@@ -57,7 +60,6 @@ const empty: NewForm = {
   phone: "",
   total_fee: 0,
   notes: "",
-  password: "",
 };
 
 function StudentsPage() {
@@ -65,6 +67,7 @@ function StudentsPage() {
   const createFn = useServerFn(createStudentAccount);
   const deleteFn = useServerFn(deleteStudentAccount);
   const resetFn = useServerFn(resetStudentPassword);
+  const backfillFn = useServerFn(backfillStudentCredentials);
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -75,6 +78,13 @@ function StudentsPage() {
   const [pwOpen, setPwOpen] = useState(false);
   const [pwTarget, setPwTarget] = useState<{ id: string; name: string } | null>(null);
   const [newPw, setNewPw] = useState("");
+
+  const [creds, setCreds] = useState<{ name: string; username: string; password: string } | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<{
+    generated: { id: string; name: string; username: string; password: string }[];
+    skipped: { name: string; reason: string }[];
+  } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["students-with-paid"],
@@ -116,7 +126,6 @@ function StudentsPage() {
     setEditing(s);
     setForm({
       name: s.name,
-      admission_no: s.admission_no ?? "",
       class_name: s.class_name,
       section: s.section ?? "",
       roll_no: s.roll_no ?? "",
@@ -124,7 +133,6 @@ function StudentsPage() {
       phone: s.phone ?? "",
       total_fee: Number(s.total_fee),
       notes: s.notes ?? "",
-      password: "",
     });
     setOpen(true);
   }
@@ -150,32 +158,46 @@ function StudentsPage() {
           .eq("id", editing.id);
         if (error) throw new Error(error.message);
         toast.success("Student updated");
+        setOpen(false);
       } else {
         const parsed = newStudentSchema.safeParse(form);
         if (!parsed.success) throw new Error(parsed.error.errors[0].message);
-        await createFn({
+        const res = await createFn({
           data: {
             name: parsed.data.name,
-            admission_no: parsed.data.admission_no,
             class_name: parsed.data.class_name,
             section: parsed.data.section || undefined,
             roll_no: parsed.data.roll_no || undefined,
             parent_name: parsed.data.parent_name || undefined,
-            phone: parsed.data.phone || undefined,
+            phone: parsed.data.phone,
             total_fee: parsed.data.total_fee,
             notes: parsed.data.notes || undefined,
-            password: parsed.data.password,
           },
         });
-        toast.success("Student added with login account");
+        setCreds({ name: parsed.data.name, username: res.username, password: res.password });
+        setOpen(false);
       }
-      setOpen(false);
       qc.invalidateQueries({ queryKey: ["students-with-paid"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     } catch (err: any) {
       toast.error(err?.message ?? "Save failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function runBackfill() {
+    if (!confirm("Generate login credentials for all students missing them?")) return;
+    setBackfilling(true);
+    try {
+      const res = await backfillFn();
+      setBackfillResult(res);
+      toast.success(`Generated ${res.generated.length} credentials`);
+      qc.invalidateQueries({ queryKey: ["students-with-paid"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Backfill failed");
+    } finally {
+      setBackfilling(false);
     }
   }
 
@@ -217,19 +239,29 @@ function StudentsPage() {
             Create student profiles. Each one gets a login account.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNew}>
-              <Plus className="h-4 w-4" /> Add student
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={runBackfill}
+            disabled={backfilling}
+            title="Generate login credentials for students missing them"
+          >
+            <Sparkles className="h-4 w-4" />
+            {backfilling ? "Generating…" : "Generate missing logins"}
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNew}>
+                <Plus className="h-4 w-4" /> Add student
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editing ? "Edit student" : "New student"}</DialogTitle>
               <DialogDescription>
                 {editing
                   ? "Update student details. Use the key icon to reset the login password."
-                  : "Enter details and a login password. The student signs in with the admission number."}
+                  : "Fill in the details. A login username and password will be generated automatically."}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={submit} className="grid grid-cols-2 gap-3">
@@ -243,32 +275,12 @@ function StudentsPage() {
                   />
                 )}
               </Field>
-              <Field label="Admission no." className={editing ? "col-span-2" : ""}>
-                {(id) => (
-                  <Input
-                    id={id}
-                    value={form.admission_no}
-                    onChange={(e) =>
-                      setForm({ ...form, admission_no: e.target.value })
-                    }
-                    disabled={!!editing}
-                    required
-                  />
-                )}
-              </Field>
               {!editing && (
-                <Field label="Login password">
-                  {(id) => (
-                    <Input
-                      id={id}
-                      type="text"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      minLength={6}
-                      required
-                    />
-                  )}
-                </Field>
+                <div className="col-span-2 rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                  Login username and password are generated automatically from the
+                  student's name and phone number (4 letters + last 4 digits;
+                  password is the full phone number).
+                </div>
               )}
               <Field label="Class">
                 {(id) => (
@@ -350,6 +362,9 @@ function StudentsPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
+
+
 
         <Dialog open={pwOpen} onOpenChange={setPwOpen}>
           <DialogContent className="max-w-sm">
@@ -492,6 +507,89 @@ function StudentsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!creds} onOpenChange={(o) => !o && setCreds(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Login credentials</DialogTitle>
+            <DialogDescription>
+              Share these with {creds?.name}. The password is their phone number.
+            </DialogDescription>
+          </DialogHeader>
+          {creds && (
+            <div className="space-y-3">
+              <CredRow label="Username" value={creds.username} />
+              <CredRow label="Password" value={creds.password} />
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setCreds(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!backfillResult} onOpenChange={(o) => !o && setBackfillResult(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Generated credentials</DialogTitle>
+            <DialogDescription>
+              Logins created for students that didn't have one.
+            </DialogDescription>
+          </DialogHeader>
+          {backfillResult && (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {backfillResult.generated.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  No new logins were created.
+                </div>
+              ) : (
+                <div className="divide-y rounded-md border">
+                  {backfillResult.generated.map((g) => (
+                    <div key={g.id} className="p-3 text-sm">
+                      <div className="font-medium">{g.name}</div>
+                      <div className="font-mono text-xs text-muted-foreground">
+                        {g.username} · {g.password}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {backfillResult.skipped.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Skipped {backfillResult.skipped.length}:{" "}
+                  {backfillResult.skipped
+                    .map((s) => `${s.name} (${s.reason})`)
+                    .join(", ")}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setBackfillResult(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function CredRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-md border p-2">
+      <div>
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="font-mono text-sm font-semibold">{value}</div>
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => {
+          navigator.clipboard.writeText(value);
+          toast.success(`${label} copied`);
+        }}
+      >
+        <Copy className="h-3.5 w-3.5" /> Copy
+      </Button>
     </div>
   );
 }
