@@ -362,6 +362,9 @@ function StudentsPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
+
+
 
         <Dialog open={pwOpen} onOpenChange={setPwOpen}>
           <DialogContent className="max-w-sm">
