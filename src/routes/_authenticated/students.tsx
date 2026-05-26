@@ -261,7 +261,7 @@ function StudentsPage() {
               <DialogDescription>
                 {editing
                   ? "Update student details. Use the key icon to reset the login password."
-                  : "Enter details and a login password. The student signs in with the admission number."}
+                  : "Fill in the details. A login username and password will be generated automatically."}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={submit} className="grid grid-cols-2 gap-3">
