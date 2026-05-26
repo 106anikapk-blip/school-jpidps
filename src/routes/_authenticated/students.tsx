@@ -17,13 +17,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Trash2, Pencil, KeyRound } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, KeyRound, Copy, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 import {
   createStudentAccount,
   deleteStudentAccount,
   resetStudentPassword,
+  backfillStudentCredentials,
 } from "@/lib/students.functions";
 
 export const Route = createFileRoute("/_authenticated/students")({
@@ -31,25 +32,27 @@ export const Route = createFileRoute("/_authenticated/students")({
 });
 
 const newStudentSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-  admission_no: z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9_\-/]+$/, "Use letters, digits, - _ /"),
-  class_name: z.string().trim().min(1).max(40),
+  name: z.string().trim().min(1, "Name is required").max(120),
+  class_name: z.string().trim().min(1, "Class is required").max(40),
   section: z.string().trim().max(20).optional().or(z.literal("")),
   roll_no: z.string().trim().max(40).optional().or(z.literal("")),
   parent_name: z.string().trim().max(120).optional().or(z.literal("")),
-  phone: z.string().trim().max(20).optional().or(z.literal("")),
+  phone: z
+    .string()
+    .trim()
+    .min(4, "Phone is required (used to generate login)")
+    .max(20)
+    .regex(/^[0-9+\-\s]+$/, "Digits only"),
   total_fee: z.coerce.number().min(0).max(10_000_000),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
-  password: z.string().min(6).max(72),
 });
 
-const editStudentSchema = newStudentSchema.omit({ password: true, admission_no: true });
+const editStudentSchema = newStudentSchema;
 
 type NewForm = z.infer<typeof newStudentSchema>;
 
 const empty: NewForm = {
   name: "",
-  admission_no: "",
   class_name: "",
   section: "",
   roll_no: "",
@@ -57,7 +60,6 @@ const empty: NewForm = {
   phone: "",
   total_fee: 0,
   notes: "",
-  password: "",
 };
 
 function StudentsPage() {
