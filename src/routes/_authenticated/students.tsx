@@ -118,7 +118,6 @@ function StudentsPage() {
     setEditing(s);
     setForm({
       name: s.name,
-      admission_no: s.admission_no ?? "",
       class_name: s.class_name,
       section: s.section ?? "",
       roll_no: s.roll_no ?? "",
@@ -126,7 +125,6 @@ function StudentsPage() {
       phone: s.phone ?? "",
       total_fee: Number(s.total_fee),
       notes: s.notes ?? "",
-      password: "",
     });
     setOpen(true);
   }
@@ -152,32 +150,46 @@ function StudentsPage() {
           .eq("id", editing.id);
         if (error) throw new Error(error.message);
         toast.success("Student updated");
+        setOpen(false);
       } else {
         const parsed = newStudentSchema.safeParse(form);
         if (!parsed.success) throw new Error(parsed.error.errors[0].message);
-        await createFn({
+        const res = await createFn({
           data: {
             name: parsed.data.name,
-            admission_no: parsed.data.admission_no,
             class_name: parsed.data.class_name,
             section: parsed.data.section || undefined,
             roll_no: parsed.data.roll_no || undefined,
             parent_name: parsed.data.parent_name || undefined,
-            phone: parsed.data.phone || undefined,
+            phone: parsed.data.phone,
             total_fee: parsed.data.total_fee,
             notes: parsed.data.notes || undefined,
-            password: parsed.data.password,
           },
         });
-        toast.success("Student added with login account");
+        setCreds({ name: parsed.data.name, username: res.username, password: res.password });
+        setOpen(false);
       }
-      setOpen(false);
       qc.invalidateQueries({ queryKey: ["students-with-paid"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     } catch (err: any) {
       toast.error(err?.message ?? "Save failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function runBackfill() {
+    if (!confirm("Generate login credentials for all students missing them?")) return;
+    setBackfilling(true);
+    try {
+      const res = await backfillFn({ data: {} });
+      setBackfillResult(res);
+      toast.success(`Generated ${res.generated.length} credentials`);
+      qc.invalidateQueries({ queryKey: ["students-with-paid"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Backfill failed");
+    } finally {
+      setBackfilling(false);
     }
   }
 
