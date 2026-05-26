@@ -190,7 +190,7 @@ function StudentsPage() {
     if (!confirm("Generate login credentials for all students missing them?")) return;
     setBackfilling(true);
     try {
-      const res = await backfillFn({ data: {} });
+      const res = await backfillFn();
       setBackfillResult(res);
       toast.success(`Generated ${res.generated.length} credentials`);
       qc.invalidateQueries({ queryKey: ["students-with-paid"] });
