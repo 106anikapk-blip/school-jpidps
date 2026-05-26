@@ -507,6 +507,89 @@ function StudentsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!creds} onOpenChange={(o) => !o && setCreds(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Login credentials</DialogTitle>
+            <DialogDescription>
+              Share these with {creds?.name}. The password is their phone number.
+            </DialogDescription>
+          </DialogHeader>
+          {creds && (
+            <div className="space-y-3">
+              <CredRow label="Username" value={creds.username} />
+              <CredRow label="Password" value={creds.password} />
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setCreds(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!backfillResult} onOpenChange={(o) => !o && setBackfillResult(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Generated credentials</DialogTitle>
+            <DialogDescription>
+              Logins created for students that didn't have one.
+            </DialogDescription>
+          </DialogHeader>
+          {backfillResult && (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {backfillResult.generated.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  No new logins were created.
+                </div>
+              ) : (
+                <div className="divide-y rounded-md border">
+                  {backfillResult.generated.map((g) => (
+                    <div key={g.id} className="p-3 text-sm">
+                      <div className="font-medium">{g.name}</div>
+                      <div className="font-mono text-xs text-muted-foreground">
+                        {g.username} · {g.password}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {backfillResult.skipped.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Skipped {backfillResult.skipped.length}:{" "}
+                  {backfillResult.skipped
+                    .map((s) => `${s.name} (${s.reason})`)
+                    .join(", ")}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setBackfillResult(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function CredRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-md border p-2">
+      <div>
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="font-mono text-sm font-semibold">{value}</div>
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => {
+          navigator.clipboard.writeText(value);
+          toast.success(`${label} copied`);
+        }}
+      >
+        <Copy className="h-3.5 w-3.5" /> Copy
+      </Button>
     </div>
   );
 }
