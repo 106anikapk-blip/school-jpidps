@@ -76,6 +76,69 @@ export type Database = {
           },
         ]
       }
+      fee_period_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payment_id: string
+          period_month: number
+          period_year: number
+          student_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payment_id: string
+          period_month: number
+          period_year: number
+          student_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_id?: string
+          period_month?: number
+          period_year?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_period_payments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "fee_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_period_payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_structure: {
+        Row: {
+          class_name: string
+          monthly_fee: number
+          updated_at: string
+        }
+        Insert: {
+          class_name: string
+          monthly_fee: number
+          updated_at?: string
+        }
+        Update: {
+          class_name?: string
+          monthly_fee?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -113,6 +176,8 @@ export type Database = {
           phone: string | null
           roll_no: string | null
           section: string | null
+          start_month: number | null
+          start_year: number | null
           total_fee: number
           updated_at: string
         }
@@ -128,6 +193,8 @@ export type Database = {
           phone?: string | null
           roll_no?: string | null
           section?: string | null
+          start_month?: number | null
+          start_year?: number | null
           total_fee?: number
           updated_at?: string
         }
@@ -143,6 +210,8 @@ export type Database = {
           phone?: string | null
           roll_no?: string | null
           section?: string | null
+          start_month?: number | null
+          start_year?: number | null
           total_fee?: number
           updated_at?: string
         }
@@ -182,6 +251,16 @@ export type Database = {
         Returns: boolean
       }
       next_receipt_no: { Args: never; Returns: string }
+      student_fee_status: {
+        Args: { _student_id: string }
+        Returns: {
+          due: number
+          paid: number
+          period_month: number
+          period_year: number
+          status: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "student"
