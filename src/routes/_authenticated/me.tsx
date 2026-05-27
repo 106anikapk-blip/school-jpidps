@@ -1,16 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { getStudentFeeStatus } from "@/lib/fees.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Receipt } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { MonthStatusGrid } from "@/components/month-status-grid";
 
 export const Route = createFileRoute("/_authenticated/me")({
   component: StudentPortal,
 });
 
 function StudentPortal() {
+  const fetchStatus = useServerFn(getStudentFeeStatus);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["my-student-data"],
     queryFn: async () => {
@@ -30,13 +35,9 @@ function StudentPortal() {
         .order("paid_on", { ascending: false });
       if (pErr) throw pErr;
 
-      const paid = payments.reduce((s, p) => s + Number(p.amount), 0);
-      return {
-        student,
-        payments,
-        paid,
-        pending: Math.max(0, Number(student.total_fee) - paid),
-      };
+      const status = await fetchStatus({ data: { studentId: student.id } });
+
+      return { student, payments, status };
     },
   });
 
@@ -49,7 +50,7 @@ function StudentPortal() {
       </div>
     );
 
-  const { student, payments, paid, pending } = data;
+  const { student, payments, status } = data;
 
   return (
     <div className="space-y-6">
@@ -63,15 +64,24 @@ function StudentPortal() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Parent" value={student.parent_name ?? "—"} />
-        <Stat label="Phone" value={student.phone ?? "—"} />
-        <Stat label="Total fee" value={formatCurrency(Number(student.total_fee))} />
-        <Stat label="Pending" value={formatCurrency(pending)} highlight={pending > 0} />
+        <Stat label="Monthly fee" value={formatCurrency(status.monthlyFee)} />
+        <Stat label="Total paid" value={formatCurrency(status.totalPaid)} />
+        <Stat label="Total pending" value={formatCurrency(status.totalPending)} highlight={status.totalPending > 0} />
+        <Stat label="Last payment" value={status.lastPaymentDate ? formatDate(status.lastPaymentDate) : "—"} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Payment history · {formatCurrency(paid)} paid</CardTitle>
+          <CardTitle>Month-wise fee status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MonthStatusGrid months={status.months} selectable={false} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment history</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {payments.length === 0 ? (
@@ -92,9 +102,7 @@ function StudentPortal() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="font-semibold">
-                      {formatCurrency(Number(p.amount))}
-                    </div>
+                    <div className="font-semibold">{formatCurrency(Number(p.amount))}</div>
                     <Button asChild size="sm" variant="outline">
                       <Link to="/receipt/$paymentId" params={{ paymentId: p.id }}>
                         <Receipt className="h-4 w-4" /> Receipt
